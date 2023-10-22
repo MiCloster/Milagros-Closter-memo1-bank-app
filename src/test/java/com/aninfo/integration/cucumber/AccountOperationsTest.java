@@ -2,7 +2,9 @@ package com.aninfo.integration.cucumber;
 
 import com.aninfo.exceptions.DepositNegativeSumException;
 import com.aninfo.exceptions.InsufficientFundsException;
+import com.aninfo.exceptions.InvalidTransactionTypeException;
 import com.aninfo.model.Account;
+import com.aninfo.model.Transaction;
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.And;
@@ -16,8 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class AccountOperationsTest extends AccountIntegrationServiceTest {
 
     private Account account;
+    private Transaction transaction;
     private InsufficientFundsException ife;
     private DepositNegativeSumException dnse;
+
+    private InvalidTransactionTypeException itte;
 
     @Before
     public void setup() {
@@ -47,6 +52,33 @@ public class AccountOperationsTest extends AccountIntegrationServiceTest {
         }
     }
 
+    @When("^Trying to TransactionDeposit (.*)$")
+    public void trying_to_transaction_deposit(int sum) {
+        try {
+            transaction = createTransactionDeposit(account, Double.valueOf(sum));
+        } catch (DepositNegativeSumException dnse) {
+            this.dnse = dnse;
+        }
+    }
+
+    @When("^Trying to TransactionWithdraw (\\d+)$")
+    public void trying_to_transaction_withdraw(int sum) {
+        try {
+            transaction = createTransactionWithdraw(account, Double.valueOf(sum));
+        } catch (InsufficientFundsException ife) {
+            this.ife = ife;
+        }
+    }
+
+    @When("^Trying to Transaction (\\w+) (.*)$")
+    public void trying_to_transaction(String type, int sum) {
+        try {
+            transaction = createTransaction(account, Double.valueOf(sum), type);
+        } catch (InvalidTransactionTypeException itte) {
+            this.itte = itte;
+        }
+    }
+
     @Then("^Account balance should be (\\d+)$")
     public void account_balance_should_be(int balance) {
         assertEquals(Double.valueOf(balance), account.getBalance());
@@ -61,6 +93,17 @@ public class AccountOperationsTest extends AccountIntegrationServiceTest {
     public void operation_should_be_denied_due_to_negative_sum() {
         assertNotNull(dnse);
     }
+
+    @Then("^Operation should be denied due to invalid type transaction$")
+    public void operation_should_be_denied_due_to_invalid_type_transaction() {
+        assertNotNull(itte);
+    }
+
+    @Then("^Transaction value should be (\\d+)$")
+    public void transaction_value_should_be(int balance) {
+        assertEquals(Double.valueOf(balance), transaction.getValueOfTransaction());
+    }
+
 
     @And("^Account balance should remain (\\d+)$")
     public void account_balance_should_remain(int balance) {
